@@ -11,10 +11,11 @@
 
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { Hono } from "hono";
-import type { AppContext } from "./context.js";
-import { router } from "./trpc.js";
+import { cors } from "hono/cors";
 import { organizationRouter } from "../routers/organization.js";
 import { userRouter } from "../routers/user.js";
+import type { AppContext } from "./context.js";
+import { router } from "./trpc.js";
 
 // tRPC API router
 const appRouter = router({
@@ -24,6 +25,25 @@ const appRouter = router({
 
 // HTTP router
 const app = new Hono<AppContext>();
+
+// CORS configuration
+app.use(
+  "/*",
+  cors({
+    origin: (origin, c) => {
+      const allowedOrigins = c.env.ALLOWED_ORIGINS?.split(",") || [
+        "https://rainwish.top",
+      ];
+      if (!origin || allowedOrigins.includes(origin)) {
+        return origin;
+      }
+      return allowedOrigins[0];
+    },
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: true,
+  }),
+);
 
 app.get("/", (c) => c.redirect("/api"));
 
@@ -35,7 +55,7 @@ app.get("/api", (c) => {
     endpoints: {
       trpc: "/api/trpc",
       auth: "/api/auth",
-      health: "/health",
+      health: "/api/health",
     },
     documentation: {
       trpc: "https://trpc.io",
@@ -45,8 +65,52 @@ app.get("/api", (c) => {
 });
 
 // Health check endpoint
-app.get("/health", (c) => {
+app.get("/api/health", (c) => {
   return c.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
+// Database test endpoint
+app.get("/api/db-test", async (c) => {
+  const { testDatabaseConnection } = await import("./db-test.js");
+
+  // Access Hyperdrive from the global environment (Cloudflare Workers binding)
+  // @ts-expect-error - HYPERDRIVE is a Cloudflare Worker binding, not in Env type
+  const hyperdrive = (c.env as { HYPERDRIVE?: { connectionString: string } })
+    .HYPERDRIVE;
+
+  if (!hyperdrive) {
+    return c.json(
+      {
+        success: false,
+        message: "Hyperdrive binding not found",
+      },
+      500,
+    );
+  }
+
+  const result = await testDatabaseConnection(hyperdrive);
+  const status = result.success ? 200 : 500;
+  return c.json(result, status);
+});
+
+// Auth test endpoint
+app.get("/api/auth-test", (c) => {
+  const auth = c.get("auth");
+  return c.json({
+    authInitialized: !!auth,
+    hasHandler: !!auth?.handler,
+    env: {
+      APP_NAME: c.env.APP_NAME,
+      APP_ORIGIN: c.env.APP_ORIGIN,
+      BETTER_AUTH_SECRET: c.env.BETTER_AUTH_SECRET
+        ? "***set***"
+        : "***missing***",
+      GOOGLE_CLIENT_ID: c.env.GOOGLE_CLIENT_ID ? "***set***" : "***missing***",
+      GOOGLE_CLIENT_SECRET: c.env.GOOGLE_CLIENT_SECRET
+        ? "***set***"
+        : "***missing***",
+    },
+  });
 });
 
 // Authentication routes
@@ -69,21 +133,25 @@ app.use("/api/trpc/*", (c) => {
       const dbDirect = c.get("dbDirect");
       const auth = c.get("auth");
 
+      // Database connections are optional for now
+      // TODO: Add proper database configuration
       if (!db) {
-        throw new Error("Database not available in context");
+        console.warn("Database not available in context");
       }
 
       if (!dbDirect) {
-        throw new Error("Direct database not available in context");
+        console.warn("Direct database not available in context");
       }
 
       if (!auth) {
-        throw new Error("Authentication service not available in context");
+        console.warn("Authentication service not available in context");
       }
 
-      const sessionData = await auth.api.getSession({
-        headers: req.headers,
-      });
+      const sessionData = auth
+        ? await auth.api.getSession({
+            headers: req.headers,
+          })
+        : null;
 
       return {
         req,
