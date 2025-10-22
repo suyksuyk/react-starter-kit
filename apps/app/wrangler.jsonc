@@ -3,7 +3,7 @@
 
   // [METADATA]
   // Application identity and Cloudflare runtime compatibility settings.
-  "name": "example-app",
+  "name": "rainwish-app",
   "compatibility_date": "2025-08-15",
   "compatibility_flags": [],
   "workers_dev": false,
@@ -27,16 +27,14 @@
   // NOTE: These routes allow other workers to handle non-app paths (e.g., marketing site)
   // prettier-ignore
   "routes": [
-    { "pattern": "example.com/_app*", "zone_name": "example.com" },
-    { "pattern": "example.com/login*", "zone_name": "example.com" },
-    { "pattern": "example.com/signup*", "zone_name": "example.com" },
-    { "pattern": "example.com/settings*", "zone_name": "example.com" },
-    { "pattern": "example.com/analytics*", "zone_name": "example.com" },
-    { "pattern": "example.com/reports*", "zone_name": "example.com" }
+    { "pattern": "rainwish.top/*", "zone_name": "rainwish.top" }
   ],
   "vars": {
     "ENVIRONMENT": "production",
-    "ALLOWED_ORIGINS": "https://example.com"
+    "VITE_API_URL": "https://rainwish.top/api",
+    "VITE_APP_NAME": "Rainwish",
+    "VITE_APP_ORIGIN": "https://rainwish.top",
+    "ALLOWED_ORIGINS": "https://rainwish.top,https://www.rainwish.top"
   },
 
   "env": {
@@ -55,16 +53,14 @@
     "staging": {
       // prettier-ignore
       "routes": [
-        { "pattern": "staging.example.com/_app*", "zone_name": "example.com" },
-        { "pattern": "staging.example.com/login*", "zone_name": "example.com" },
-        { "pattern": "staging.example.com/signup*", "zone_name": "example.com" },
-        { "pattern": "staging.example.com/settings*", "zone_name": "example.com" },
-        { "pattern": "staging.example.com/analytics*", "zone_name": "example.com" },
-        { "pattern": "staging.example.com/reports*", "zone_name": "example.com" }
+        { "pattern": "staging.rainwish.top/*", "zone_name": "rainwish.top" }
       ],
       "vars": {
         "ENVIRONMENT": "staging",
-        "ALLOWED_ORIGINS": "https://staging.example.com"
+        "VITE_API_URL": "https://rainwish.top/api",
+        "VITE_APP_NAME": "Rainwish",
+        "VITE_APP_ORIGIN": "https://staging.rainwish.top",
+        "ALLOWED_ORIGINS": "https://staging.rainwish.top"
       }
     },
 
@@ -73,16 +69,14 @@
     "preview": {
       // prettier-ignore
       "routes": [
-        { "pattern": "preview.example.com/_app*", "zone_name": "example.com" },
-        { "pattern": "preview.example.com/login*", "zone_name": "example.com" },
-        { "pattern": "preview.example.com/signup*", "zone_name": "example.com" },
-        { "pattern": "preview.example.com/settings*", "zone_name": "example.com" },
-        { "pattern": "preview.example.com/analytics*", "zone_name": "example.com" },
-        { "pattern": "preview.example.com/reports*", "zone_name": "example.com" }
+        { "pattern": "preview.rainwish.top/*", "zone_name": "rainwish.top" }
       ],
       "vars": {
         "ENVIRONMENT": "preview",
-        "ALLOWED_ORIGINS": "https://preview.example.com"
+        "VITE_API_URL": "https://rainwish.top/api",
+        "VITE_APP_NAME": "Rainwish",
+        "VITE_APP_ORIGIN": "https://preview.rainwish.top",
+        "ALLOWED_ORIGINS": "https://preview.rainwish.top"
       }
     }
   }

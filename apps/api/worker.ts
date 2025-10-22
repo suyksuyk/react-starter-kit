@@ -16,9 +16,13 @@ import type { AppContext } from "./lib/context.js";
 import { createDb } from "./lib/db.js";
 import type { Env } from "./lib/env.js";
 
+// Hyperdrive type definition for Cloudflare Workers
+interface Hyperdrive {
+  connectionString: string;
+}
+
 type CloudflareEnv = {
-  HYPERDRIVE_CACHED: Hyperdrive;
-  HYPERDRIVE_DIRECT: Hyperdrive;
+  HYPERDRIVE: Hyperdrive;
 } & Env;
 
 // Create a Hono app with Cloudflare Workers context
@@ -29,19 +33,34 @@ const worker = new Hono<{
 
 // Initialize shared context for all requests
 worker.use("*", async (c, next) => {
-  // Initialize database using Neon via Hyperdrive
-  const db = createDb(c.env.HYPERDRIVE_CACHED);
-  const dbDirect = createDb(c.env.HYPERDRIVE_DIRECT);
+  try {
+    // Check if Hyperdrive binding is available
+    if (!c.env.HYPERDRIVE) {
+      console.error("Hyperdrive binding not found");
+      return c.json({ error: "Database configuration error" }, 500);
+    }
 
-  // Initialize auth
-  const auth = createAuth(db, c.env);
+    // Initialize database using Neon via Hyperdrive
+    const db = createDb(c.env.HYPERDRIVE);
 
-  // Set context variables
-  c.set("db", db);
-  c.set("dbDirect", dbDirect);
-  c.set("auth", auth);
+    // Initialize auth
+    const auth = createAuth(db, c.env);
 
-  await next();
+    // Set context variables
+    c.set("db", db);
+    c.set("auth", auth);
+
+    await next();
+  } catch (error) {
+    console.error("Worker initialization error:", error);
+    return c.json(
+      {
+        error: "Service initialization failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      500,
+    );
+  }
 });
 
 // Mount the core API app
