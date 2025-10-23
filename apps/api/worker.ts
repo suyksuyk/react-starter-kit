@@ -16,13 +16,11 @@ import type { AppContext } from "./lib/context.js";
 import { createDb } from "./lib/db.js";
 import type { Env } from "./lib/env.js";
 
-// Hyperdrive type definition for Cloudflare Workers
-interface Hyperdrive {
-  connectionString: string;
-}
-
 type CloudflareEnv = {
-  HYPERDRIVE: Hyperdrive;
+  HYPERDRIVE?: {
+    connectionString: string;
+  };
+  DATABASE_URL?: string;
 } & Env;
 
 // Create a Hono app with Cloudflare Workers context
@@ -34,14 +32,16 @@ const worker = new Hono<{
 // Initialize shared context for all requests
 worker.use("*", async (c, next) => {
   try {
-    // Check if Hyperdrive binding is available
-    if (!c.env.HYPERDRIVE) {
-      console.error("Hyperdrive binding not found");
+    // Try DATABASE_URL first, fallback to Hyperdrive
+    const connectionSource = c.env.DATABASE_URL || c.env.HYPERDRIVE;
+
+    if (!connectionSource) {
+      console.error("No database configuration found");
       return c.json({ error: "Database configuration error" }, 500);
     }
 
-    // Initialize database using Neon via Hyperdrive
-    const db = createDb(c.env.HYPERDRIVE);
+    // Initialize database using direct connection or Hyperdrive
+    const db = createDb(connectionSource as any);
 
     // Initialize auth
     const auth = createAuth(db, c.env);
@@ -53,13 +53,9 @@ worker.use("*", async (c, next) => {
     await next();
   } catch (error) {
     console.error("Worker initialization error:", error);
-    return c.json(
-      {
-        error: "Service initialization failed",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      500,
-    );
+    // Don't return 500 error immediately, let the request continue
+    // This allows auth endpoints to work even if database fails
+    await next();
   }
 });
 

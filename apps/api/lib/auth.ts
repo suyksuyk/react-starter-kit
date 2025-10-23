@@ -53,13 +53,48 @@ export function createAuth(
   db: DB,
   env: AuthEnv,
 ): ReturnType<typeof betterAuth> {
+  // Validate required environment variables
+  if (!env.BETTER_AUTH_SECRET) {
+    throw new Error(
+      "BETTER_AUTH_SECRET environment variable is required for authentication",
+    );
+  }
+
+  if (!env.APP_NAME) {
+    throw new Error(
+      "APP_NAME environment variable is required for authentication",
+    );
+  }
+
+  if (!env.APP_ORIGIN) {
+    throw new Error(
+      "APP_ORIGIN environment variable is required for authentication",
+    );
+  }
+
+  if (!env.RESEND_API_KEY) {
+    console.warn(
+      "RESEND_API_KEY environment variable is missing. Email OTP functionality will not work.",
+    );
+  }
+
+  if (!env.RESEND_EMAIL_FROM) {
+    console.warn(
+      "RESEND_EMAIL_FROM environment variable is missing. Email functionality will not work.",
+    );
+  }
+
   // Extract domain from APP_ORIGIN for passkey rpID
   const appUrl = new URL(env.APP_ORIGIN);
   const rpID = appUrl.hostname;
 
   return betterAuth({
     baseURL: `${env.APP_ORIGIN}/api/auth`,
-    trustedOrigins: [env.APP_ORIGIN],
+    trustedOrigins: [
+      env.APP_ORIGIN,
+      "https://app.rainwish.top",
+      "https://www.rainwish.top",
+    ],
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(db, {
       provider: "pg",

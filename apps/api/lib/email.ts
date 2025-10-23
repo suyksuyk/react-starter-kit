@@ -74,21 +74,50 @@ export async function sendEmail(
   const resend = createResendClient(env.RESEND_API_KEY);
 
   try {
+    console.log("Attempting to send email via Resend:", {
+      from: options.from || env.RESEND_EMAIL_FROM,
+      to: recipients,
+      subject: options.subject,
+      hasHtml: !!options.html,
+      hasText: !!options.text,
+    });
+
     const result = await resend.emails.send({
       ...options,
       from: options.from || env.RESEND_EMAIL_FROM,
       text: options.text || options.html?.replace(/<[^>]*>/g, "") || "", // NOTE: Basic HTML stripping; consider html-to-text for complex content
     });
 
+    console.log("Resend API response:", { result });
+
     // Check if Resend returned an error in the response
     if (result.error) {
+      console.error("Resend API error details:", result.error);
       throw new Error(
         `Resend API error: ${result.error.message || result.error.name || "Unknown error"}`,
       );
     }
 
+    console.log("Email sent successfully:", {
+      messageId: result.data?.id,
+    });
+
     return result;
   } catch (error) {
+    console.error("Email sending failed with full error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      options: {
+        from: options.from || env.RESEND_EMAIL_FROM,
+        to: recipients,
+        subject: options.subject,
+      },
+      env: {
+        hasApiKey: !!env.RESEND_API_KEY,
+        hasFromAddress: !!env.RESEND_EMAIL_FROM,
+        fromAddress: env.RESEND_EMAIL_FROM,
+      },
+    });
     throw new Error(
       `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -179,6 +208,7 @@ export async function sendPasswordReset(
  *
  * [SECURITY] OTP should be rate-limited, time-bound (5-10 min), and single-use.
  * [UX] Subject line varies by type to help users identify purpose.
+ * [ERROR HANDLING] Provides detailed error messages for debugging.
  *
  * @example
  * ```typescript
@@ -197,26 +227,84 @@ export async function sendOTP(
     type: "sign-in" | "email-verification" | "forget-password";
   },
 ) {
-  const component = OTPEmail({
+  // Validate required environment variables
+  if (!env.RESEND_API_KEY) {
+    throw new Error(
+      "RESEND_API_KEY environment variable is required for sending OTP emails",
+    );
+  }
+
+  if (!env.RESEND_EMAIL_FROM) {
+    throw new Error(
+      "RESEND_EMAIL_FROM environment variable is required for sending OTP emails",
+    );
+  }
+
+  if (!env.APP_NAME) {
+    throw new Error(
+      "APP_NAME environment variable is required for sending OTP emails",
+    );
+  }
+
+  if (!env.APP_ORIGIN) {
+    throw new Error(
+      "APP_ORIGIN environment variable is required for sending OTP emails",
+    );
+  }
+
+  // DEBUG: Log OTP for testing (remove in production)
+  console.log("🔍 DEBUG - OTP generated:", {
+    email: options.email,
     otp: options.otp,
     type: options.type,
-    appName: env.APP_NAME,
-    appUrl: env.APP_ORIGIN,
+    timestamp: new Date().toISOString(),
   });
 
-  const html = await renderEmailToHtml(component);
-  const text = await renderEmailToText(component);
+  try {
+    const component = OTPEmail({
+      otp: options.otp,
+      type: options.type,
+      appName: env.APP_NAME,
+      appUrl: env.APP_ORIGIN,
+    });
 
-  const typeLabels = {
-    "sign-in": "Sign In",
-    "email-verification": "Email Verification",
-    "forget-password": "Password Reset",
-  };
+    const html = await renderEmailToHtml(component);
+    const text = await renderEmailToText(component);
 
-  return sendEmail(env, {
-    to: options.email,
-    subject: `Your ${typeLabels[options.type]} code`,
-    html,
-    text,
-  });
+    const typeLabels = {
+      "sign-in": "Sign In",
+      "email-verification": "Email Verification",
+      "forget-password": "Password Reset",
+    };
+
+    // For testing: if using test API key, just log instead of sending
+    if (env.RESEND_API_KEY === "re_test_key_for_debugging") {
+      console.log("🧪 TEST MODE - Would send email:", {
+        to: options.email,
+        subject: `Your ${typeLabels[options.type]} code`,
+        otp: options.otp,
+        htmlLength: html.length,
+        textLength: text.length,
+      });
+      return { data: { id: "test-mode-id" } };
+    }
+
+    return sendEmail(env, {
+      to: options.email,
+      subject: `Your ${typeLabels[options.type]} code`,
+      html,
+      text,
+    });
+  } catch (error) {
+    console.error("Failed to send OTP email:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      email: options.email,
+      type: options.type,
+      appName: env.APP_NAME,
+      appOrigin: env.APP_ORIGIN,
+      hasResendKey: !!env.RESEND_API_KEY,
+      hasResendFrom: !!env.RESEND_EMAIL_FROM,
+    });
+    throw error;
+  }
 }

@@ -23,9 +23,10 @@
   // Command: bun wrangler deploy
 
   // WARNING: Route modifications must be synchronized across all environments
+  // Use www subdomain to avoid conflicts with main app and API
   // prettier-ignore
   "routes": [
-    { "pattern": "example.com/*", "zone_name": "example.com" }
+    { "pattern": "www.rainwish.top/*", "zone_name": "rainwish.top" }
   ],
   "vars": {
     "ENVIRONMENT": "production"

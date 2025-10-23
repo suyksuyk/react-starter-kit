@@ -19,54 +19,36 @@ import {
   UserPlus,
   Users as UsersIcon,
 } from "lucide-react";
+import { useSuspenseUsersWithTeamQuery } from "../../lib/queries/users";
 
 export const Route = createFileRoute("/(app)/users")({
   component: Users,
 });
 
 function Users() {
-  const users = [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@example.com",
-      role: "Admin",
-      status: "Active",
-      lastActive: "2 hours ago",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      role: "Editor",
-      status: "Active",
-      lastActive: "5 minutes ago",
-    },
-    {
-      id: 3,
-      name: "Bob Johnson",
-      email: "bob.johnson@example.com",
-      role: "Viewer",
-      status: "Inactive",
-      lastActive: "2 days ago",
-    },
-    {
-      id: 4,
-      name: "Alice Brown",
-      email: "alice.brown@example.com",
-      role: "Editor",
-      status: "Active",
-      lastActive: "1 hour ago",
-    },
-    {
-      id: 5,
-      name: "Charlie Wilson",
-      email: "charlie.wilson@example.com",
-      role: "Viewer",
-      status: "Active",
-      lastActive: "30 minutes ago",
-    },
-  ];
+  const { data: users, error } = useSuspenseUsersWithTeamQuery();
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="text-red-600">Error loading users: {error.message}</div>
+      </div>
+    );
+  }
+
+  // Calculate statistics from real data
+  const totalUsers = users.length;
+  const activeUsers = users.filter((user) => user.status === "Active").length;
+  const activeUsersPercentage =
+    totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
+  const newUsersThisMonth = users.filter((user) => {
+    const createdAt = new Date(user.created_at || "");
+    const thisMonth = new Date();
+    return (
+      createdAt.getMonth() === thisMonth.getMonth() &&
+      createdAt.getFullYear() === thisMonth.getFullYear()
+    );
+  }).length;
 
   return (
     <div className="p-6 space-y-6">
@@ -91,9 +73,9 @@ function Users() {
             <UsersIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
+            <div className="text-2xl font-bold">{totalUsers}</div>
             <p className="text-xs text-muted-foreground">
-              +10% from last month
+              Total registered users
             </p>
           </CardContent>
         </Card>
@@ -103,8 +85,10 @@ function Users() {
             <UsersIcon className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">892</div>
-            <p className="text-xs text-muted-foreground">72% of total users</p>
+            <div className="text-2xl font-bold">{activeUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              {activeUsersPercentage}% of total users
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -115,10 +99,8 @@ function Users() {
             <UserPlus className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">48</div>
-            <p className="text-xs text-muted-foreground">
-              +32% from last month
-            </p>
+            <div className="text-2xl font-bold">{newUsersThisMonth}</div>
+            <p className="text-xs text-muted-foreground">Joined this month</p>
           </CardContent>
         </Card>
       </div>
