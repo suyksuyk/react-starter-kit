@@ -37,7 +37,8 @@ const plans = [
       "Custom deployment help",
     ],
     variant: "default" as const,
-    paypalId: "professional-plan",
+    paypalId:
+      "EChtks3yrQBsiqXFONPIMkJ_qaDjcdXwSMTM3R2fstfkc1eeGmeILIyFj_sxjfUuAZKm7K2nCZtLSa9l",
   },
   {
     name: "Enterprise",
@@ -66,8 +67,11 @@ const handleSubscribe = (plan: (typeof plans)[0]) => {
     return;
   }
 
-  // 生成PayPal支付URL
-  const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=${plan.paypalId}&item_name=${encodeURIComponent(plan.name)}&amount=${plan.price.replace("$", "")}&currency_code=USD`;
+  // 使用PayPal.me链接 - 最简单可靠的方式
+  const paypalUrl = "https://paypal.me/rainwish";
+
+  // 调试：打印URL到控制台
+  console.log("PayPal URL:", paypalUrl);
 
   // 直接跳转到PayPal支付页面
   window.location.href = paypalUrl;
