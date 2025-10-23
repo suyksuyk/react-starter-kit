@@ -5,8 +5,10 @@
 export default {
   async fetch(
     request: Request,
-    _env: unknown,
-    _ctx: unknown,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    env: unknown,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ctx: unknown,
   ): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
