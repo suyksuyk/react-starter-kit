@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui';
+import SubscribeButton from '@/components/SubscribeButton';
 
 const title = "Pricing - React Starter Kit";
 const description = "React Starter Kit is free and open source. Choose the support level that's right for your team.";
@@ -19,8 +20,6 @@ const plans = [
       "Regular updates",
       "All features included"
     ],
-    cta: "Get Started",
-    href: "https://github.com/kriasoft/react-starter-kit",
     variant: "outline" as const
   },
   {
@@ -37,8 +36,6 @@ const plans = [
       "Architecture consultation",
       "Custom deployment help"
     ],
-    cta: "Contact Sales",
-    href: "mailto:hello@kriasoft.com?subject=React Starter Kit Professional",
     variant: "default" as const
   },
   {
@@ -54,8 +51,6 @@ const plans = [
       "Dedicated support team",
       "White-label options"
     ],
-    cta: "Contact Us",
-    href: "mailto:hello@kriasoft.com?subject=React Starter Kit Enterprise",
     variant: "outline" as const
   }
 ];
@@ -97,16 +92,16 @@ const plans = [
             <ul class="space-y-3 mb-6">
               {plan.features.map((feature) => (
                 <li class="flex items-start">
-                  <svg 
-                    class="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    class="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path 
-                      stroke-linecap="round" 
-                      stroke-linejoin="round" 
-                      stroke-width="2" 
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
@@ -114,20 +109,12 @@ const plans = [
                 </li>
               ))}
             </ul>
-            <Button 
-              variant={plan.variant} 
-              className="w-full" 
-              asChild 
+            <SubscribeButton
+              plan={plan.name}
+              variant={plan.variant}
+              className="w-full"
               client:visible
-            >
-              <a 
-                href={plan.href}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {plan.cta}
-              </a>
-            </Button>
+            />
           </CardContent>
         </Card>
       ))}
@@ -210,15 +197,12 @@ const plans = [
             Start Building for Free
           </a>
         </Button>
-        <Button variant="outline" size="lg" asChild client:visible>
-          <a
-            href="mailto:hello@kriasoft.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Contact Sales
-          </a>
-        </Button>
+        <SubscribeButton
+          plan="Professional"
+          variant="outline"
+          size="lg"
+          client:visible
+        />
       </div>
     </section>
   </div>
