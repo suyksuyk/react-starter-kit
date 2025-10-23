@@ -16,7 +16,7 @@ interface SubscribeButtonProps {
   className?: string;
 }
 
-export function SubscribeButton({
+export default function SubscribeButton({
   plan,
   variant = "default",
   className,
