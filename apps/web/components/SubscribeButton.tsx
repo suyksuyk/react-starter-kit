@@ -21,15 +21,19 @@ export default function SubscribeButton({
   className,
 }: SubscribeButtonProps) {
   const handleClick = async () => {
-    // For now, directly redirect to PayPal without login check
-    // TODO: Integrate with authentication system when web and app are unified
-    const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YOUR_BUTTON_ID&item_name=${encodeURIComponent(plan)} Plan`;
-    window.open(paypalUrl, "_blank", "noopener,noreferrer");
+    // Show contact information instead of PayPal
+    // TODO: Set up proper payment integration with valid payment processor
+    alert(
+      `To subscribe to the ${plan} plan, please contact us at:\n\n` +
+        `📧 Email: support@reactstarterkit.com\n` +
+        `🌐 Website: https://reactstarterkit.com\n\n` +
+        `We'll get back to you within 24 hours to set up your subscription.`,
+    );
   };
 
   return (
     <Button variant={variant} className={className} onClick={handleClick}>
-      Subscribe
+      Contact Us
     </Button>
   );
 }
