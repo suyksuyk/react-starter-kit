@@ -4,7 +4,6 @@
 import { auth } from "@/lib/auth";
 import { sessionQueryOptions } from "@/lib/queries/session";
 import { queryClient } from "@/lib/query";
-import { useNavigate } from "@tanstack/react-router";
 import type { FormEvent } from "react";
 import { useState } from "react";
 
@@ -17,7 +16,6 @@ export function useLoginForm({
   onSuccess,
   isExternallyLoading,
 }: UseLoginFormOptions = {}) {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

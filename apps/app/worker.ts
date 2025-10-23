@@ -3,7 +3,11 @@
  * Minimal implementation for debugging
  */
 export default {
-  async fetch(request: Request, env: unknown, ctx: unknown): Promise<Response> {
+  async fetch(
+    request: Request,
+    _env: unknown,
+    _ctx: unknown,
+  ): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
 

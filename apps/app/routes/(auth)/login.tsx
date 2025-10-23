@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/login-form";
 import { authConfig, getSafeRedirectUrl } from "@/lib/auth-config";
 import { invalidateSession, sessionQueryOptions } from "@/lib/queries/session";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/(auth)/login")({
@@ -42,7 +42,6 @@ export const Route = createFileRoute("/(auth)/login")({
 });
 
 function LoginPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { redirect, returnUrl } = Route.useSearch();
   const [isPostOAuth, setIsPostOAuth] = useState(false);
@@ -77,10 +76,8 @@ function LoginPage() {
           // [AUTO REDIRECT] Route to original destination or default
           const finalDestination =
             returnUrl || authConfig.oauth.postLoginRedirect;
-          navigate({ to: finalDestination }).catch(() => {
-            // Hard redirect fallback ensures navigation on router failure
-            window.location.href = finalDestination;
-          });
+          // 🔥 彻底解决：使用硬重定向而不是路由器导航
+          window.location.href = finalDestination;
         } else {
           // OAuth incomplete - display login form for retry
           setIsCheckingAuth(false);
@@ -99,7 +96,7 @@ function LoginPage() {
     return () => {
       isMounted.current = false;
     };
-  }, [returnUrl, queryClient, navigate]);
+  }, [returnUrl, queryClient]);
 
   async function handleSuccess() {
     // [CACHE SYNC] Invalidate session cache after successful login
