@@ -21,11 +21,11 @@ export default function SubscribeButton({
   className,
 }: SubscribeButtonProps) {
   const handleClick = async () => {
-    // For now, directly redirect to login page
-    // TODO: Add proper authentication check when API is available
-    const currentPath = window.location.pathname;
-    const loginUrl = `http://localhost:5173/login?redirect=${encodeURIComponent(currentPath)}&plan=${encodeURIComponent(plan)}`;
-    window.location.href = loginUrl;
+    // Simple alert for now to avoid API dependency issues
+    // TODO: Implement proper subscription flow when API is stable
+    alert(
+      `Subscribe to ${plan} plan: This feature is coming soon!\n\nIn a real implementation, this would:\n1. Check if user is logged in\n2. Redirect to login if not authenticated\n3. Process payment for ${plan} plan\n4. Update user subscription status`,
+    );
   };
 
   return (
