@@ -3,7 +3,7 @@
 
   // [METADATA]
   // Application identity and Cloudflare runtime compatibility settings.
-  "name": "example-web",
+  "name": "rainwish-web",
   "compatibility_date": "2025-08-15",
   "compatibility_flags": [],
   "workers_dev": false,
@@ -22,14 +22,15 @@
   // Default configuration used when no --env flag is specified.
   // Command: bun wrangler deploy
 
-  // WARNING: Route modifications must be synchronized across all environments
-  // Use www subdomain to avoid conflicts with main app and API
+  // Custom domain configuration for rainwish.top
   // prettier-ignore
   "routes": [
     { "pattern": "www.rainwish.top/*", "zone_name": "rainwish.top" }
   ],
   "vars": {
-    "ENVIRONMENT": "production"
+    "ENVIRONMENT": "production",
+    "API_URL": "https://rainwish-api.sydneiholdengi87033.workers.dev",
+    "APP_URL": "https://rainwish.top"
   },
 
   "env": {

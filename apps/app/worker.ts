@@ -54,6 +54,21 @@ export default {
       }
     }
 
+    // Special handling for [object Object] redirect issue
+    if (
+      pathname.includes("[object Object]") ||
+      pathname.includes("%5Bobject%20Object%5D")
+    ) {
+      console.log(
+        "🔧 Detected [object Object] path, redirecting to home:",
+        pathname,
+      );
+      return Response.redirect(
+        new URL("https://app.rainwish.top/", request.url),
+        301,
+      );
+    }
+
     // Handle static assets directly
     if (
       pathname.startsWith("/_app/") ||

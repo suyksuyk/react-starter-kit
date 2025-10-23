@@ -2,11 +2,11 @@
 /* SPDX-License-Identifier: MIT */
 
 import { auth } from "@/lib/auth";
-import { queryClient } from "@/lib/query";
 import { sessionQueryOptions } from "@/lib/queries/session";
+import { queryClient } from "@/lib/query";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import type { FormEvent } from "react";
+import { useState } from "react";
 
 interface UseLoginFormOptions {
   onSuccess?: () => void;
@@ -27,6 +27,10 @@ export function useLoginForm({
   const isDisabled = isLoading || isExternallyLoading;
 
   const handleSuccess = async () => {
+    // DEBUG: Log success handling
+    console.log("🔍 useLoginForm.handleSuccess called");
+    console.log("- has onSuccess callback:", !!onSuccess);
+
     // First, fetch the fresh session to ensure it's in the cache
     await queryClient.fetchQuery(sessionQueryOptions());
 
@@ -35,9 +39,12 @@ export function useLoginForm({
 
     // Call custom success handler or navigate to home
     if (onSuccess) {
+      console.log("🔍 Calling onSuccess callback");
       onSuccess();
     } else {
-      navigate({ to: "/" });
+      console.log("🔍 No onSuccess callback, using hard redirect to '/'");
+      // 🔥 彻底解决：使用硬重定向而不是路由器导航
+      window.location.href = "/";
     }
   };
 

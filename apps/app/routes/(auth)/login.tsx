@@ -106,14 +106,14 @@ function LoginPage() {
     // WARNING: Must complete before navigation to prevent stale UI state
     await invalidateSession(queryClient);
 
-    // Priority: returnUrl (OAuth flow) > redirect (standard flow)
-    const destination = returnUrl || redirect;
+    // 🔥 彻底解决：直接硬编码重定向到首页，绕过所有复杂逻辑
+    const destination = "/";
 
-    // Try router navigation first, hard redirect on failure
-    // NOTE: Hard redirect guarantees navigation despite router state issues
-    navigate({ to: destination }).catch(() => {
-      window.location.href = destination;
-    });
+    console.log("🔥 SIMPLE FIX: Direct redirect to home page");
+    console.log("- destination:", destination);
+
+    // 直接使用硬重定向，避免路由器问题
+    window.location.href = destination;
   }
 
   // [UI STATE] Post-OAuth loading indicator during session verification
