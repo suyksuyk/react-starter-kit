@@ -17,32 +17,33 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 /**
- * Creates a database client using Drizzle ORM and Cloudflare Hyperdrive.
+ * Creates a database client using Drizzle ORM and PostgreSQL connection.
  *
  * Configuration is optimized for Cloudflare Workers environment with single
  * connection per request and aggressive timeouts to prevent connection leaks.
  * The `prepare: false` setting avoids prepared statement caching which can
  * cause issues in the Workers runtime.
  *
- * @param db - Cloudflare Hyperdrive binding providing connection string
+ * @param connectionSource - Either Cloudflare Hyperdrive binding or direct connection string
  * @returns Drizzle ORM database client with postgres.js adapter
  * @throws Will throw if connection string is invalid or connection fails
  *
  * @example
  * ```typescript
- * // In Cloudflare Workers context
+ * // In Cloudflare Workers context with Hyperdrive
+ * const db = createDb(env.HYPERDRIVE);
  *
- * // Use cached connection for read-heavy operations
- * const db = createDb(env.HYPERDRIVE_CACHED);
- * const activeUsers = await db.select().from(Db.users).where(eq(Db.users.isActive, true));
- *
- * // Use direct connection for real-time operations
- * const dbDirect = createDb(env.HYPERDRIVE_DIRECT);
- * await dbDirect.insert(Db.users).values({ name: 'John', email: 'john@example.com' });
+ * // Or with direct connection string
+ * const db = createDb(env.DATABASE_URL);
  * ```
  */
-export function createDb(db: Hyperdrive) {
-  const client = postgres(db.connectionString, {
+export function createDb(connectionSource: Hyperdrive | string) {
+  const connectionString =
+    typeof connectionSource === "string"
+      ? connectionSource
+      : connectionSource.connectionString;
+
+  const client = postgres(connectionString, {
     max: 1,
     connect_timeout: 10,
     prepare: false, // Recommended for Cloudflare Workers

@@ -14,6 +14,7 @@ const publicEnvVars = [
   "APP_ORIGIN",
   "GOOGLE_CLOUD_PROJECT",
   "GA_MEASUREMENT_ID",
+  "API_ORIGIN",
 ];
 
 /**

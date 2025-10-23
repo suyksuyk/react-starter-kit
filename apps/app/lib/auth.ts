@@ -32,7 +32,10 @@ import { authConfig } from "./auth-config";
 // Get the base URL from environment variable or use default for development
 const baseURL =
   typeof window !== "undefined"
-    ? window.location.origin
+    ? import.meta.env.VITE_API_URL?.replace(/\/api$/, "") ||
+      (window.location.hostname.includes("app.rainwish.top")
+        ? "https://rainwish.top"
+        : window.location.origin)
     : "http://localhost:5173";
 
 // Create the auth client with plugins and configuration

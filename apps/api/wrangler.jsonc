@@ -27,8 +27,8 @@
     "ENVIRONMENT": "production",
     "APP_NAME": "Rainwish",
     "APP_ORIGIN": "https://rainwish.top",
-    "ALLOWED_ORIGINS": "https://rainwish.top,https://www.rainwish.top",
-    "RESEND_EMAIL_FROM": "onboarding@resend.dev"
+    "ALLOWED_ORIGINS": "https://rainwish.top,https://www.rainwish.top,https://app.rainwish.top",
+    "RESEND_EMAIL_FROM": "hi@mail.rainwish.com.cn"
   },
   // prettier-ignore
   "hyperdrive": [
@@ -68,41 +68,11 @@
     "staging": {
       // prettier-ignore
       "routes": [
-				{
-					"pattern": "staging.rainwish.top/api*",
-					"zone_name": "rainwish.top"
-				}
-			],
-      "vars": {
-        "ENVIRONMENT": "staging",
-        "APP_NAME": "Rainwish",
-        "APP_ORIGIN": "https://staging.rainwish.top",
-        "ALLOWED_ORIGINS": "https://staging.rainwish.top",
-        "RESEND_EMAIL_FROM": "onboarding@resend.dev"
-      },
-      // prettier-ignore
-      "hyperdrive": [
-				{
-					"binding": "HYPERDRIVE_CACHED",
-					"id": "your-staging-hyperdrive-cached-id-here"
-				},
-				{
-					"binding": "HYPERDRIVE_DIRECT",
-					"id": "your-staging-hyperdrive-direct-id-here"
-				}
-			],
-      "kv_namespaces": []
-    },
-    // [ENV:PREVIEW]
-    // Command: bun wrangler deploy --env preview
-    "preview": {
-      // prettier-ignore
-      "routes": [
-				{
-					"pattern": "preview.rainwish.top/api*",
-					"zone_name": "rainwish.top"
-				}
-			],
+			{
+				"pattern": "preview.rainwish.top/api*",
+				"zone_name": "rainwish.top"
+			}
+		],
       "vars": {
         "ENVIRONMENT": "preview",
         "APP_NAME": "Rainwish",

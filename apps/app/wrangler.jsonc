@@ -4,6 +4,7 @@
   // [METADATA]
   // Application identity and Cloudflare runtime compatibility settings.
   "name": "rainwish-app",
+  "main": "./worker.ts",
   "compatibility_date": "2025-08-15",
   "compatibility_flags": [],
   "workers_dev": false,
@@ -24,17 +25,17 @@
   // Command: bun wrangler deploy
 
   // WARNING: Route modifications must be synchronized across all environments
-  // NOTE: These routes allow other workers to handle non-app paths (e.g., marketing site)
+  // NOTE: App deployed to subdomain for better separation and SPA handling
   // prettier-ignore
   "routes": [
-    { "pattern": "rainwish.top/*", "zone_name": "rainwish.top" }
+    { "pattern": "app.rainwish.top/*", "zone_name": "rainwish.top" }
   ],
   "vars": {
     "ENVIRONMENT": "production",
     "VITE_API_URL": "https://rainwish.top/api",
     "VITE_APP_NAME": "Rainwish",
-    "VITE_APP_ORIGIN": "https://rainwish.top",
-    "ALLOWED_ORIGINS": "https://rainwish.top,https://www.rainwish.top"
+    "VITE_APP_ORIGIN": "https://app.rainwish.top",
+    "ALLOWED_ORIGINS": "https://app.rainwish.top,https://rainwish.top,https://www.rainwish.top"
   },
 
   "env": {

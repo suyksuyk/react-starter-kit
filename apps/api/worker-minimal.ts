@@ -3,7 +3,7 @@
  */
 
 export default {
-  async fetch(request: Request, env: any, ctx: any) {
+  async fetch(request: Request, env: Record<string, unknown>) {
     const url = new URL(request.url);
 
     // 基本路由
