@@ -22,49 +22,38 @@ export default function SubscribeButton({
 }: SubscribeButtonProps) {
   const handleClick = async () => {
     try {
-      // Check if user is logged in by calling the API
-      const apiUrl =
-        import.meta.env.PUBLIC_API_URL ||
-        "https://rainwish-api.sydneiholdengi87033.workers.dev";
-      const response = await fetch(`${apiUrl}/auth/get-session`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      // 检查用户登录状态
+      const response = await fetch("https://rainwish.top/api/auth/get-session");
+      const isLoggedIn = response.ok && (await response.json()).user !== null;
 
-      if (!response.ok) {
-        // User is not logged in, redirect to login page
-        const loginUrl = `/login?redirect=${encodeURIComponent("/pricing")}&plan=${encodeURIComponent(plan)}`;
+      if (isLoggedIn) {
+        // 已登录：跳转到PayPal支付
+        const paypalUrl = getPaypalUrl(plan);
+        window.location.href = paypalUrl;
+      } else {
+        // 未登录：跳转到登录页面，登录后跳转到PayPal
+        const paypalUrl = getPaypalUrl(plan);
+        const loginUrl = `https://app.rainwish.top/login?redirect=${encodeURIComponent(paypalUrl)}`;
         window.location.href = loginUrl;
-        return;
       }
-
-      const session = await response.json();
-
-      if (!session?.user) {
-        // No user session, redirect to login
-        const loginUrl = `/login?redirect=${encodeURIComponent("/pricing")}&plan=${encodeURIComponent(plan)}`;
-        window.location.href = loginUrl;
-        return;
-      }
-
-      // User is logged in, redirect to PayPal for payment
-      const paypalUrl = getPaypalUrl(plan);
-      window.location.href = paypalUrl;
     } catch (error) {
-      console.error("Error checking authentication:", error);
-      // On error, assume user is not logged in and redirect to login
-      const loginUrl = `/login?redirect=${encodeURIComponent("/pricing")}&plan=${encodeURIComponent(plan)}`;
+      console.error("Auth check failed:", error);
+      // 错误时默认跳转到登录页面
+      const paypalUrl = getPaypalUrl(plan);
+      const loginUrl = `https://app.rainwish.top/login?redirect=${encodeURIComponent(paypalUrl)}`;
       window.location.href = loginUrl;
     }
   };
 
-  // Generate PayPal URL based on plan
+  // 生成PayPal支付链接
   const getPaypalUrl = (planName: string): string => {
+    if (planName === "Enterprise") {
+      // 企业版跳转到联系页面
+      return "mailto:contact@rainwish.top?subject=Enterprise Plan Inquiry";
+    }
+
     const paypalBase = "https://www.paypal.com/cgi-bin/webscr";
-    const business = "your-business@example.com"; // Replace with actual PayPal business email
+    const business = "your-business@example.com"; // 替换为实际PayPal商户邮箱
 
     const planPrices: Record<string, { amount: string; item_name: string }> = {
       "Open Source": { amount: "0", item_name: "Open Source Plan - Free" },
@@ -72,15 +61,9 @@ export default function SubscribeButton({
         amount: "299.00",
         item_name: "Professional Plan - One-time Payment",
       },
-      Enterprise: { amount: "0", item_name: "Enterprise Plan - Contact Us" },
     };
 
     const planInfo = planPrices[planName] || planPrices["Professional"];
-
-    if (planName === "Enterprise") {
-      // For enterprise, redirect to contact page
-      return "/contact?plan=Enterprise";
-    }
 
     const params = new URLSearchParams({
       cmd: "_xclick",
@@ -93,7 +76,7 @@ export default function SubscribeButton({
       return: `${window.location.origin}/subscription/success?plan=${encodeURIComponent(planName)}`,
       cancel_return: `${window.location.origin}/pricing?cancelled=true`,
       notify_url: `${window.location.origin}/api/paypal/webhook`,
-      custom: JSON.stringify({ plan: planName, userId: "current-user" }), // Will be updated with actual user ID
+      custom: JSON.stringify({ plan: planName }),
     });
 
     return `${paypalBase}?${params.toString()}`;
