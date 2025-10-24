@@ -124,29 +124,97 @@ export default {
       console.log("Index fetch failed:", error);
     }
 
-    // Fallback response
+    // Fallback - serve a simple index.html for SPA routing
     return new Response(
       `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
-        <title>App Rainwish - Maintenance</title>
+        <meta charset="utf-8" />
+        <title>Rainwish App</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-          .error { color: #f44336; }
-          .info { color: #2196F3; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .container {
+            max-width: 400px;
+            width: 100%;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+          }
+          .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          }
+          .message {
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+          }
+          .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: transform 0.2s;
+          }
+          .btn:hover {
+            transform: translateY(-1px);
+          }
+          .debug {
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+          }
         </style>
       </head>
       <body>
-        <h1 class="error">🚧 应用正在维护中</h1>
-        <p class="info">请稍后再试或访问测试页面：<a href="/test-simple.html">测试页面</a></p>
-        <p>当前路径: ${pathname}</p>
-        <p>时间: ${new Date().toISOString()}</p>
+        <div class="container">
+          <div class="logo">Rainwish</div>
+          <div class="message">
+            欢迎使用 Rainwish 应用！<br>
+            正在加载中...
+          </div>
+          <a href="/login" class="btn">立即登录</a>
+          <div class="debug">
+            路径: ${pathname}<br>
+            时间: ${new Date().toISOString()}
+          </div>
+        </div>
+        <script>
+          // Auto-redirect to login after 2 seconds
+          setTimeout(() => {
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
+          }, 2000);
+        </script>
       </body>
       </html>
     `,
       {
-        status: 503,
+        status: 200,
         headers: { "Content-Type": "text/html" },
       },
     );

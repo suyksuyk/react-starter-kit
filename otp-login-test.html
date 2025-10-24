@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTP登录测试 - 部署验证</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        border-color: #4caf50;
+        background: #f1f8e9;
+      }
+      .error {
+        border-color: #f44336;
+        background: #ffebee;
+      }
+      .info {
+        border-color: #2196f3;
+        background: #e3f2fd;
+      }
+      button {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #1976d2;
+      }
+      input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin: 5px;
+        width: 200px;
+      }
+      .result {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔐 OTP登录功能测试</h1>
+      <p>测试部署到 <strong>https://app.rainwish.top</strong> 的OTP登录功能</p>
+
+      <div class="test-section info">
+        <h3>📋 测试环境信息</h3>
+        <div id="env-info">正在检查...</div>
+      </div>
+
+      <div class="test-section">
+        <h3>📧 发送OTP验证码</h3>
+        <input
+          type="email"
+          id="email"
+          placeholder="输入邮箱地址"
+          value="test@example.com"
+        />
+        <button onclick="sendOTP()">发送验证码</button>
+        <div id="send-result" class="result"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>🔢 验证OTP登录</h3>
+        <input
+          type="email"
+          id="login-email"
+          placeholder="邮箱地址"
+          value="test@example.com"
+        />
+        <input
+          type="text"
+          id="otp-code"
+          placeholder="OTP验证码"
+          value="123456"
+        />
+        <button onclick="verifyOTP()">验证登录</button>
+        <div id="verify-result" class="result"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>🌐 直接访问测试</h3>
+        <button onclick="testLogin()">测试登录页面</button>
+        <button onclick="testAPI()">测试API连接</button>
+        <div id="direct-result" class="result"></div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "https://rainwish.top/api";
+      const APP_BASE = "https://app.rainwish.top";
+
+      // 页面加载时检查环境
+      window.onload = function () {
+        checkEnvironment();
+      };
+
+      async function checkEnvironment() {
+        const envDiv = document.getElementById("env-info");
+        try {
+          const healthResponse = await fetch(`${API_BASE}/health`);
+          const health = await healthResponse.json();
+
+          envDiv.innerHTML = `
+                    <strong>✅ API状态:</strong> ${health.status}<br>
+                    <strong>🕐 时间戳:</strong> ${health.timestamp}<br>
+                    <strong>🌍 API地址:</strong> ${API_BASE}<br>
+                    <strong>🏠 应用地址:</strong> ${APP_BASE}
+                `;
+          envDiv.parentElement.className = "test-section success";
+        } catch (error) {
+          envDiv.innerHTML = `<strong>❌ 连接失败:</strong> ${error.message}`;
+          envDiv.parentElement.className = "test-section error";
+        }
+      }
+
+      async function sendOTP() {
+        const email = document.getElementById("email").value;
+        const resultDiv = document.getElementById("send-result");
+
+        if (!email) {
+          resultDiv.textContent = "请输入邮箱地址";
+          resultDiv.style.color = "red";
+          return;
+        }
+
+        resultDiv.textContent = "正在发送验证码...";
+        resultDiv.style.color = "blue";
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/sign-in/email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            resultDiv.textContent = `✅ 验证码发送成功!\n响应: ${JSON.stringify(data, null, 2)}`;
+            resultDiv.style.color = "green";
+          } else {
+            resultDiv.textContent = `❌ 发送失败: ${response.status}\n响应: ${JSON.stringify(data, null, 2)}`;
+            resultDiv.style.color = "red";
+          }
+        } catch (error) {
+          resultDiv.textContent = `❌ 网络错误: ${error.message}`;
+          resultDiv.style.color = "red";
+        }
+      }
+
+      async function verifyOTP() {
+        const email = document.getElementById("login-email").value;
+        const code = document.getElementById("otp-code").value;
+        const resultDiv = document.getElementById("verify-result");
+
+        if (!email || !code) {
+          resultDiv.textContent = "请输入邮箱地址和验证码";
+          resultDiv.style.color = "red";
+          return;
+        }
+
+        resultDiv.textContent = "正在验证登录...";
+        resultDiv.style.color = "blue";
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/auth/sign-in/email/verify`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email, code }),
+            },
+          );
+
+          const data = await response.json();
+
+          if (response.ok) {
+            resultDiv.textContent = `✅ 登录成功!\n响应: ${JSON.stringify(data, null, 2)}`;
+            resultDiv.style.color = "green";
+          } else {
+            resultDiv.textContent = `❌ 登录失败: ${response.status}\n响应: ${JSON.stringify(data, null, 2)}`;
+            resultDiv.style.color = "red";
+          }
+        } catch (error) {
+          resultDiv.textContent = `❌ 网络错误: ${error.message}`;
+          resultDiv.style.color = "red";
+        }
+      }
+
+      async function testLogin() {
+        const resultDiv = document.getElementById("direct-result");
+        resultDiv.textContent = "正在测试登录页面...";
+        resultDiv.style.color = "blue";
+
+        try {
+          const response = await fetch(`${APP_BASE}/login`);
+          const text = await response.text();
+
+          if (response.ok && text.includes("login")) {
+            resultDiv.textContent = `✅ 登录页面正常访问\n状态码: ${response.status}`;
+            resultDiv.style.color = "green";
+          } else {
+            resultDiv.textContent = `⚠️ 登录页面可能有问题\n状态码: ${response.status}\n内容预览: ${text.substring(0, 200)}...`;
+            resultDiv.style.color = "orange";
+          }
+        } catch (error) {
+          resultDiv.textContent = `❌ 访问失败: ${error.message}`;
+          resultDiv.style.color = "red";
+        }
+      }
+
+      async function testAPI() {
+        const resultDiv = document.getElementById("direct-result");
+        resultDiv.textContent = "正在测试API连接...";
+        resultDiv.style.color = "blue";
+
+        try {
+          const response = await fetch(`${API_BASE}/health`);
+          const data = await response.json();
+
+          if (response.ok) {
+            resultDiv.textContent = `✅ API连接正常\n响应: ${JSON.stringify(data, null, 2)}`;
+            resultDiv.style.color = "green";
+          } else {
+            resultDiv.textContent = `❌ API连接失败: ${response.status}`;
+            resultDiv.style.color = "red";
+          }
+        } catch (error) {
+          resultDiv.textContent = `❌ API连接错误: ${error.message}`;
+          resultDiv.style.color = "red";
+        }
+      }
+    </script>
+  </body>
+</html>

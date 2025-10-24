@@ -6,6 +6,7 @@ import * as organization from "./organization";
 import * as passkey from "./passkey";
 import * as team from "./team";
 import * as user from "./user";
+import * as verification from "./verification";
 
 export const schema = {
   ...invitation,
@@ -13,6 +14,7 @@ export const schema = {
   ...passkey,
   ...team,
   ...user,
+  ...verification,
 } as const;
 
 export type DbSchema = typeof schema;

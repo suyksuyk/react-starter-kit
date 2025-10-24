@@ -125,6 +125,112 @@ app.get("/api/auth-test", (c) => {
   });
 });
 
+// Auth routes debug endpoint
+app.get("/api/auth-routes", (c) => {
+  const auth = c.get("auth");
+  if (!auth) {
+    return c.json({ error: "Auth not initialized" }, 500);
+  }
+
+  // List common Better Auth routes for email OTP
+  const routes = [
+    "/api/auth/sign-in/email",
+    "/api/auth/sign-in/email-otp",
+    "/api/auth/send-verification-otp",
+    "/api/auth/verify-otp",
+    "/api/auth/sign-in/otp",
+    "/api/auth/session",
+    "/api/auth/sign-out",
+  ];
+
+  return c.json({
+    message: "Better Auth Email OTP Routes",
+    availableRoutes: routes,
+    note: "These are the standard routes. Use POST for email OTP endpoints.",
+    documentation: "https://better-auth.com/docs/plugins/email-otp",
+  });
+});
+
+// Test email OTP endpoint with detailed debugging
+app.post("/api/test-email-otp", async (c) => {
+  const auth = c.get("auth");
+  if (!auth) {
+    return c.json({ error: "Auth not initialized" }, 500);
+  }
+
+  const { email } = await c.req.json();
+
+  if (!email) {
+    return c.json({ error: "Email is required" }, 400);
+  }
+
+  try {
+    // Test different possible endpoints and parameter formats
+    const testCases = [
+      { endpoint: "/sign-in/email-otp", body: { email } },
+      { endpoint: "/sign-in/email-otp", body: { email, type: "sign-in" } },
+      { endpoint: "/sign-in/email-otp", body: { email, phoneNumber: null } },
+      { endpoint: "/send-verification-otp", body: { email } },
+      { endpoint: "/send-verification-otp", body: { email, type: "sign-in" } },
+      { endpoint: "/sign-in/email", body: { email } },
+      { endpoint: "/verify-otp", body: { email, otp: "123456" } },
+    ];
+
+    const results = [];
+
+    for (const testCase of testCases) {
+      try {
+        const testRequest = new Request(
+          `https://rainwish.top/api/auth${testCase.endpoint}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Origin: "https://rainwish.top",
+            },
+            body: JSON.stringify(testCase.body),
+          },
+        );
+
+        const response = await auth.handler(testRequest);
+        const responseText = await response.text();
+
+        results.push({
+          endpoint: testCase.endpoint,
+          requestBody: testCase.body,
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: responseText,
+          success: response.ok,
+        });
+      } catch (error) {
+        results.push({
+          endpoint: testCase.endpoint,
+          requestBody: testCase.body,
+          error: error instanceof Error ? error.message : "Unknown error",
+          success: false,
+        });
+      }
+    }
+
+    return c.json({
+      email,
+      testResults: results,
+      recommendation:
+        "Look for successful endpoints and their required parameters",
+    });
+  } catch (error) {
+    return c.json(
+      {
+        error: "Test failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      500,
+    );
+  }
+});
+
 // Authentication routes
 app.all("/api/auth/signin", async (c) => {
   const auth = c.get("auth");
@@ -201,6 +307,193 @@ app.all("/api/auth/session", async (c) => {
     return c.json(
       {
         error: "Auth handler failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      500,
+    );
+  }
+});
+
+// Custom email OTP endpoints to match frontend expectations
+app.post("/api/auth/send-verification-otp", async (c) => {
+  const auth = c.get("auth");
+  if (!auth) {
+    return c.json({ error: "Auth not initialized" }, 500);
+  }
+
+  try {
+    const { email, type } = await c.req.json();
+
+    if (!email) {
+      return c.json({ error: "Email is required" }, 400);
+    }
+
+    console.log("Custom send-verification-otp:", { email, type });
+
+    // Try to use Better Auth's internal email OTP sending
+    // This might be a custom implementation or direct call to the email service
+    const { sendOTP } = await import("./email.js");
+    const env = c.env as any;
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    try {
+      await sendOTP(env, { email, otp, type: type || "sign-in" });
+
+      // Store OTP in database for verification (using verification table)
+      const db = c.get("db");
+      if (db) {
+        // First try to insert, if fails then update
+        try {
+          await db.execute(`
+            INSERT INTO "verification" (id, identifier, value, expires_at, created_at, updated_at)
+            VALUES (
+              gen_random_uuid(),
+              '${email}',
+              '${otp}',
+              NOW() + INTERVAL '5 minutes',
+              NOW(),
+              NOW()
+            )
+          `);
+        } catch (insertError) {
+          // If insert fails due to unique constraint, update existing record
+          await db.execute(`
+            UPDATE "verification"
+            SET value = '${otp}',
+                expires_at = NOW() + INTERVAL '5 minutes',
+                updated_at = NOW()
+            WHERE identifier = '${email}'
+          `);
+        }
+      }
+
+      return c.json({
+        success: true,
+        message: "OTP sent successfully",
+        email: email,
+        type: type || "sign-in",
+      });
+    } catch (emailError) {
+      console.error("Failed to send OTP:", emailError);
+      return c.json(
+        {
+          error: "Failed to send OTP",
+          message:
+            emailError instanceof Error ? emailError.message : "Unknown error",
+        },
+        500,
+      );
+    }
+  } catch (error) {
+    console.error("send-verification-otp error:", error);
+    return c.json(
+      {
+        error: "Invalid request",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      400,
+    );
+  }
+});
+
+app.post("/api/auth/verify-otp", async (c) => {
+  const auth = c.get("auth");
+  if (!auth) {
+    return c.json({ error: "Auth not initialized" }, 500);
+  }
+
+  try {
+    const { email, otp } = await c.req.json();
+
+    if (!email || !otp) {
+      return c.json({ error: "Email and OTP are required" }, 400);
+    }
+
+    console.log("Custom verify-otp:", { email, otp });
+
+    // Verify OTP from database
+    const db = c.get("db");
+    if (!db) {
+      return c.json({ error: "Database not available" }, 500);
+    }
+
+    const verification = await db.execute(`
+      SELECT * FROM "verification"
+      WHERE identifier = '${email}'
+      AND value = '${otp}'
+      AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `);
+
+    if (verification.length === 0) {
+      return c.json({ error: "Invalid or expired OTP" }, 400);
+    }
+
+    // Delete the used OTP
+    await db.execute(`
+      DELETE FROM "verification"
+      WHERE identifier = '${email}'
+      AND value = '${otp}'
+    `);
+
+    // Check if user exists, if not create one
+    let user = await db.execute(`
+      SELECT * FROM "user" WHERE email = '${email}' LIMIT 1
+    `);
+
+    let userId;
+    if (user.length === 0) {
+      // Create new user
+      await db.execute(`
+        INSERT INTO "user" (name, email, email_verified, image, is_anonymous)
+        VALUES ('${email.split("@")[0]}', '${email}', true, NULL, false)
+      `);
+
+      const newUser = await db.execute(`
+        SELECT id FROM "user" WHERE email = '${email}' LIMIT 1
+      `);
+      userId = newUser[0].id;
+
+      // Create identity for OTP authentication
+      try {
+        await db.execute(`
+          INSERT INTO "identity" (user_id, provider_id, provider_account_id)
+          VALUES ('${userId}', 'email-otp', '${email}')
+        `);
+      } catch (identityError) {
+        console.log("Identity creation failed, but continuing:", identityError);
+        // Continue even if identity creation fails
+      }
+    } else {
+      userId = user[0].id;
+    }
+
+    // Create manual session (simplified approach)
+    const sessionId = crypto.randomUUID();
+    try {
+      await db.execute(`
+        INSERT INTO "session" (id, user_id, expires_at, created_at)
+        VALUES ('${sessionId}', '${userId}', NOW() + INTERVAL '7 days', NOW())
+      `);
+    } catch (sessionError) {
+      console.log("Session creation failed, but continuing:", sessionError);
+      // Continue even if session creation fails
+    }
+
+    return c.json({
+      success: true,
+      message: "OTP verified successfully",
+      user: { id: userId, email: email },
+      session: { id: sessionId },
+    });
+  } catch (error) {
+    console.error("verify-otp error:", error);
+    return c.json(
+      {
+        error: "OTP verification failed",
         message: error instanceof Error ? error.message : "Unknown error",
       },
       500,
@@ -509,6 +802,16 @@ app.get("/api/admin/debug-tables", async (c) => {
       };
     }
 
+    try {
+      tables.verification = await db.execute(`
+        SELECT * FROM "verification" ORDER BY created_at DESC LIMIT 5
+      `);
+    } catch (e) {
+      tables.verification = {
+        error: e instanceof Error ? e.message : "Unknown error",
+      };
+    }
+
     return c.json({
       success: true,
       tables: tables,
@@ -769,6 +1072,74 @@ app.post("/api/admin/test-user-insert", async (c) => {
       }
     }
   } catch (error) {
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      500,
+    );
+  }
+});
+
+// Create verification table endpoint
+app.post("/api/admin/create-verification-table", async (c) => {
+  try {
+    const db = c.get("db");
+    if (!db) {
+      return c.json({ error: "Database not available" }, 500);
+    }
+
+    console.log("Creating verification table...");
+
+    // Execute the migration SQL
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS "verification" (
+        "id" TEXT NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+        "identifier" TEXT NOT NULL,
+        "value" TEXT NOT NULL,
+        "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL,
+        "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+        "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+      )
+    `);
+
+    // Create indexes
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS "idx_verification_identifier" ON "verification"("identifier")
+    `);
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS "idx_verification_expires_at" ON "verification"("expires_at")
+    `);
+
+    // Add unique constraint (PostgreSQL syntax)
+    try {
+      await db.execute(`
+        ALTER TABLE "verification" ADD CONSTRAINT IF NOT EXISTS "unique_verification_identifier" UNIQUE ("identifier")
+      `);
+    } catch (constraintError) {
+      console.log(
+        "Constraint may already exist or needs manual creation:",
+        constraintError,
+      );
+    }
+
+    // Verify table creation
+    const tableCheck = await db.execute(`
+      SELECT column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_name = 'verification'
+      ORDER BY ordinal_position
+    `);
+
+    return c.json({
+      success: true,
+      message: "Verification table created successfully",
+      schema: tableCheck,
+    });
+  } catch (error) {
+    console.error("Create verification table error:", error);
     return c.json(
       {
         success: false,
