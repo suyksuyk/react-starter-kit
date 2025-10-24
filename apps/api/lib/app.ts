@@ -176,7 +176,16 @@ app.post("/api/test-email-otp", async (c) => {
       { endpoint: "/verify-otp", body: { email, otp: "123456" } },
     ];
 
-    const results = [];
+    const results: Array<{
+      endpoint: string;
+      requestBody: Record<string, unknown>;
+      status?: number;
+      statusText?: string;
+      headers?: Record<string, string>;
+      body?: string;
+      success: boolean;
+      error?: string;
+    }> = [];
 
     for (const testCase of testCases) {
       try {
@@ -333,7 +342,13 @@ app.post("/api/auth/send-verification-otp", async (c) => {
     // Try to use Better Auth's internal email OTP sending
     // This might be a custom implementation or direct call to the email service
     const { sendOTP } = await import("./email.js");
-    const env = c.env as any;
+    const env = c.env as {
+      APP_NAME: string;
+      APP_ORIGIN: string;
+      RESEND_API_KEY: string;
+      RESEND_EMAIL_FROM: string;
+      [key: string]: unknown;
+    };
 
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -357,7 +372,7 @@ app.post("/api/auth/send-verification-otp", async (c) => {
               NOW()
             )
           `);
-        } catch (insertError) {
+        } catch {
           // If insert fails due to unique constraint, update existing record
           await db.execute(`
             UPDATE "verification"
@@ -440,7 +455,7 @@ app.post("/api/auth/verify-otp", async (c) => {
     `);
 
     // Check if user exists, if not create one
-    let user = await db.execute(`
+    const user = await db.execute(`
       SELECT * FROM "user" WHERE email = '${email}' LIMIT 1
     `);
 
@@ -750,7 +765,7 @@ app.get("/api/admin/debug-tables", async (c) => {
     }
 
     // Check if tables exist and get their data
-    const tables: any = {};
+    const tables: Record<string, unknown> = {};
 
     try {
       tables.organizations = await db.execute(`
