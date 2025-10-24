@@ -16,7 +16,7 @@ export const Route = createFileRoute("/(auth)/login")({
     const session = await context.queryClient.fetchQuery(sessionQueryOptions());
 
     if (session?.user && session?.session) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: "/subscribe" });
     }
   },
   component: LoginPage,
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/(auth)/login")({
 
 function LoginPage() {
   const queryClient = useQueryClient();
-  const { redirect, returnUrl } = Route.useSearch();
+  const { returnUrl } = Route.useSearch();
   const [isPostOAuth, setIsPostOAuth] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const isMounted = useRef(true);
@@ -103,10 +103,10 @@ function LoginPage() {
     // WARNING: Must complete before navigation to prevent stale UI state
     await invalidateSession(queryClient);
 
-    // 🔥 彻底解决：直接硬编码重定向到首页，绕过所有复杂逻辑
-    const destination = "/";
+    // 🔥 彻底解决：直接硬编码重定向到订阅页面，绕过所有复杂逻辑
+    const destination = "/subscribe";
 
-    console.log("🔥 SIMPLE FIX: Direct redirect to home page");
+    console.log("🔥 SIMPLE FIX: Direct redirect to subscribe page");
     console.log("- destination:", destination);
 
     // 直接使用硬重定向，避免路由器问题
